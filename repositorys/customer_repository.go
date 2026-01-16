@@ -25,23 +25,21 @@ func GetCustomerByID(id uint) (*models.Customer, error) { //(id uint) bu kısım
 	/*
 		First(&customer, 10)
 		“ID = 10 olan kaydı getir, ama sıralamayı da dikkate al.”
+
+		err := database.DB.Last(&customers, 10).Error --->  “ID = 10 olan kaydı getir, ama sondan bakarak.”
+		err := database.DB.Take(&customers, 10).Error --->  “ID = 10 olan kaydı getir, sıralamayı dikkate alma.”
 	*/
 	if err != nil {
-		return nil, err
+		return nil, err // eğer hata varsa nill döndür ve hatayı yaz
 	}
 
-	/*
-		err := database.DB.Last(&customers).Error
-		err := database.DB.Take(&customers).Error
-	*/
-
-	return &customer, nil
+	return &customer, nil //eğer bir hata yoksa customerı döntür hatayı da nill olarak döndür
 }
 
 // Tüm müşterileri getirir
 func GetAllCustomers() ([]models.Customer, error) {
-	var customers []models.Customer
-	err := database.DB.Find(&customers).Error
+	var customers []models.Customer           //[] models.Customer: customer listesi oluştur, boş bir slice oluştur
+	err := database.DB.Find(&customers).Error //“DB’ye git, bütün customers kayıtlarını bul, bu slice’ın içine doldur.”
 	if err != nil {
 		return nil, err
 	}
