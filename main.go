@@ -1,43 +1,32 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	"log"
 
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"github.com/beyza/go-bank-simulator/database"
 )
 
-type User struct {
-	ID        uint `gorm:"primaryKey"`
-	Name      string
-	Email     string `gorm:"uniqueIndex"`
-	CreatedAt time.Time
-}
-
 func main() {
-	// Bu dosya DB Browser ile açacağın dosya
-	db, err := gorm.Open(sqlite.Open("app.db"), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
+	database.Init() // veritabanını hazırla
+	/*
+		database.Init()
+		   ↓
+		DB’ye bağlan
+		   ↓
+		customers tablosunu oluştur
+		   ↓
+		accounts tablosunu oluştur
+		   ↓
+		transactions tablosunu oluştur
+		   ↓
+		DB’yi hazır hale getir
 
-	// Tablo yoksa oluşturur (migration)
-	if err := db.AutoMigrate(&User{}); err != nil {
-		panic(err)
-	}
+	*/
+	log.Println("DB hazir. Tablolar olusturuldu.")
+	/*
+		burada fmt yerine log kullanmamızın sebebi, log paketinin zaman damgası eklemesi ve daha profesyonel bir çıktı sağlamasıdır.
+		bu sayede herhnagi bir hata olduğunda veya bilgi vermek istediğimizde, zaman bilgisiyle birlikte daha anlamlı loglar elde ederiz.
+		log.println: kayıt tutar
+	*/
 
-	// Örnek insert
-	u := User{Name: "Ali", Email: "ali@example.com"}
-	if err := db.Create(&u).Error; err != nil {
-		panic(err)
-	}
-
-	// Örnek select
-	var users []User
-	if err := db.Find(&users).Error; err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Users:", users)
 }
