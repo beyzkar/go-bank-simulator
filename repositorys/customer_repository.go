@@ -1,5 +1,11 @@
 package repositorys
 
+/*
+	Sadece veri erişim katmanıdır
+	DB ile konuşur
+	CRUD yapar (Create, Read, Update, Delete)
+	Karar vermez
+*/
 import (
 	"github.com/beyza/go-bank-simulator/database" //DB bağlantısına ihtiyacımız var
 	"github.com/beyza/go-bank-simulator/models"   //go da models/customer olarak çağıramayız, sadece packageları çağırabiliriz

@@ -1,5 +1,13 @@
 package services
 
+/*
+	repository ile handler arasında köprü görevi görür
+	business logic burada yazılır (bu sistem nasıl çalışmalı, hangi durumda neye izin verilir)
+	database'e gitmek business logic katmanının görevi değildir
+	kontrol yapan katman
+	service = beyin
+*/
+
 import (
 	"errors"
 	"strings"
@@ -11,6 +19,7 @@ import (
 // Yeni müşteri oluşturur (iş kuralları burada)
 func CreateCustomer(name, email string) (*models.Customer, error) {
 	if strings.TrimSpace(name) == "" {
+		//strings.TrimSpace: baştaki ve sondaki boşlukları siler
 		return nil, errors.New("isim boş olamaz")
 	}
 
@@ -24,6 +33,9 @@ func CreateCustomer(name, email string) (*models.Customer, error) {
 	}
 
 	err := repositorys.CreateCustomer(customer)
+
+	//service -> repositorys -> database
+
 	if err != nil {
 		return nil, err
 	}
@@ -47,8 +59,8 @@ func GetAllCustomers() ([]models.Customer, error) {
 
 // Müşteri siler
 func DeleteCustomer(id uint) error {
-	if id == 0 {
-		return errors.New("geçersiz müşteri id")
+	if id == 0 { //bu ksıım business logic
+		return errors.New("geçersiz müşteri id") // business logic değil, teknik işlem git veritabanından getir
 	}
 
 	return repositorys.DeleteCustomer(id)
