@@ -87,3 +87,29 @@ func GetTransactionsByAccountID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, txs)
 }
+
+type transferRequest struct {
+	FromAccountID uint    `json:"fromAccountId"`
+	ToAccountID   uint    `json:"toAccountId"`
+	Amount        float64 `json:"amount"`
+}
+
+func Transfer(c *gin.Context) {
+	var req transferRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz json body"})
+		return
+	}
+
+	txOut, txIn, err := services.Transfer(req.FromAccountID, req.ToAccountID, req.Amount)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"transferOut": txOut,
+		"transferIn":  txIn,
+	})
+}

@@ -22,7 +22,6 @@ func main() {
 		transactions tablosunu oluştur
 		   ↓
 		DB’yi hazır hale getir
-
 	*/
 
 	r := gin.Default()
@@ -32,6 +31,9 @@ func main() {
 			"message": "pong",
 		})
 	})
+
+	r.POST("/seed", handlers.SeedDatabase)
+
 	// Customers
 	r.POST("/customers", handlers.CreateCustomer)
 	r.GET("/customers", handlers.GetAllCustomers)
@@ -45,10 +47,13 @@ func main() {
 	r.GET("/customers/:id/accounts", handlers.GetAccountsByCustomerID)
 
 	// Transactions
-	r.POST("/accounts/:accountId/deposit", handlers.Deposit)
-	r.POST("/accounts/:accountId/withdraw", handlers.Withdraw)
+	r.POST("/accounts/:id/deposit", handlers.Deposit)
+	r.POST("/accounts/:id/withdraw", handlers.Withdraw)
 	r.GET("/transactions/:id", handlers.GetTransactionByID)
-	r.GET("/accounts/:accountId/transactions", handlers.GetTransactionsByAccountID)
+	r.GET("/accounts/:id/transactions", handlers.GetTransactionsByAccountID)
+
+	//Transfer
+	r.POST("/accounts/transfer", handlers.Transfer)
 
 	//log.Println("DB hazir. Tablolar olusturuldu.")
 	/*
@@ -61,5 +66,4 @@ func main() {
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal(err)
 	}
-
 }

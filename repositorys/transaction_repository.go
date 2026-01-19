@@ -2,6 +2,7 @@ package repositorys
 
 import (
 	"errors"
+	"time"
 
 	"github.com/beyza/go-bank-simulator/database"
 	"github.com/beyza/go-bank-simulator/models"
@@ -112,4 +113,74 @@ func Withdraw(accountID uint, amount float64) (*models.Transaction, error) {
 		return nil, err
 	}
 	return createdTx, nil
+}
+
+func Transfer(fromID, toID uint, amount float64) (*models.Transaction, *models.Transaction, error) {
+	db := database.DB
+	if db == nil {
+		return nil, nil, errors.New("db bağlantısı yok")
+	}
+
+	var txOut *models.Transaction
+	var txIn *models.Transaction
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var fromAcc models.Account
+		if err := tx.First(&fromAcc, fromID).Error; err != nil {
+			return errors.New("gönderen hesap bulunamadı")
+		}
+
+		var toAcc models.Account
+		if err := tx.First(&toAcc, toID).Error; err != nil {
+			return errors.New("alıcı hesap bulunamadı")
+		}
+
+		if fromAcc.Balance < amount {
+			return errors.New("yetersiz bakiye")
+		}
+
+		// Bakiyeleri güncelle
+		fromAcc.Balance -= amount
+		toAcc.Balance += amount
+
+		if err := tx.Save(&fromAcc).Error; err != nil {
+			return err
+		}
+		if err := tx.Save(&toAcc).Error; err != nil {
+			return err
+		}
+
+		// Transaction kayıtları
+		now := time.Now()
+
+		out := &models.Transaction{
+			AccountID: fromAcc.ID,
+			Type:      "transfer_out",
+			Amount:    amount,
+			CreatedAt: now,
+		}
+		in := &models.Transaction{
+			AccountID: toAcc.ID,
+			Type:      "transfer_in",
+			Amount:    amount,
+			CreatedAt: now,
+		}
+
+		if err := tx.Create(out).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(in).Error; err != nil {
+			return err
+		}
+
+		txOut = out
+		txIn = in
+		return nil
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return txOut, txIn, nil
 }
