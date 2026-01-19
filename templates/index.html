@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Go Bank Simulator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3">Go Bank Simulator</h1>
+    <button class="btn btn-outline-primary" onclick="loadAll()">Yenile</button>
+  </div>
+
+  <!-- 🔍 Müşteri Arama -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5>İsimle Müşteri Ara</h5>
+      <div class="input-group">
+        <input id="searchName" class="form-control" placeholder="İsim yaz">
+        <button class="btn btn-primary" onclick="searchCustomer()">Ara</button>
+      </div>
+      <div id="searchResult" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- 👥 Müşteriler -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5>Müşteriler</h5>
+
+      <form class="row g-2 mb-3" onsubmit="createCustomer(event)">
+        <div class="col-md-4">
+          <input id="custName" class="form-control" placeholder="Ad Soyad" required>
+        </div>
+        <div class="col-md-4">
+          <input id="custEmail" class="form-control" placeholder="Email" required>
+        </div>
+        <div class="col-md-4 d-grid">
+          <button class="btn btn-success">Ekle</button>
+        </div>
+      </form>
+
+      <table class="table table-sm">
+        <thead>
+          <tr><th>ID</th><th>İsim</th><th>Email</th><th></th></tr>
+        </thead>
+        <tbody id="customersBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 💳 Hesap Sorgu + Para İşlemleri -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5>Hesap İşlemleri</h5>
+
+      <form class="row g-2 mb-3" onsubmit="getAccount(event)">
+        <div class="col-md-6">
+          <input id="accId" class="form-control" placeholder="Account ID" required>
+        </div>
+        <div class="col-md-6 d-grid">
+          <button class="btn btn-dark">Hesabı Getir</button>
+        </div>
+      </form>
+
+      <div id="accountCard"></div>
+
+      <div class="row g-2 mt-3">
+        <div class="col-md-4">
+          <input id="moneyAmount" class="form-control" placeholder="Tutar">
+        </div>
+        <div class="col-md-4 d-grid">
+          <button class="btn btn-success" onclick="deposit()">Para Yatır</button>
+        </div>
+        <div class="col-md-4 d-grid">
+          <button class="btn btn-danger" onclick="withdraw()">Para Çek</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const api = (url, opts={}) => fetch(url, {
+  headers: {"Content-Type":"application/json"},
+  ...opts
+});
+
+async function loadCustomers(){
+  const r = await api("/customers");
+  const data = await r.json();
+  const body = document.getElementById("customersBody");
+  body.innerHTML = "";
+  data.forEach(c => {
+    body.innerHTML += `
+      <tr>
+        <td>${c.ID}</td>
+        <td>${c.Name}</td>
+        <td>${c.Email}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-danger"
+            onclick="deleteCustomer(${c.ID})">Sil</button>
+        </td>
+      </tr>`;
+  });
+}
+
+async function createCustomer(e){
+  e.preventDefault();
+  await api("/customers", {
+    method:"POST",
+    body: JSON.stringify({
+      name: custName.value,
+      email: custEmail.value
+    })
+  });
+  e.target.reset();
+  loadCustomers();
+}
+
+async function deleteCustomer(id){
+  await api(`/customers/${id}`, {method:"DELETE"});
+  loadCustomers();
+}
+
+async function searchCustomer(){
+  const name = searchName.value.toLowerCase();
+  const r = await api("/customers");
+  const data = await r.json();
+  const found = data.filter(c => c.Name.toLowerCase().includes(name));
+  searchResult.innerHTML = found.map(c =>
+    `<div class="alert alert-info">
+      <b>${c.Name}</b> – ${c.Email} (ID: ${c.ID})
+    </div>`
+  ).join("");
+}
+
+let currentAccountId = null;
+
+async function getAccount(e){
+  e.preventDefault();
+  currentAccountId = accId.value;
+  const r = await api(`/accounts/${currentAccountId}`);
+  const a = await r.json();
+  accountCard.innerHTML = `
+    <div class="card bg-dark text-white">
+      <div class="card-body">
+        <p><b>Account ID:</b> ${a.ID}</p>
+        <p><b>Customer ID:</b> ${a.CustomerID}</p>
+        <p><b>Bakiye:</b> ${a.Balance} ₺</p>
+      </div>
+    </div>`;
+}
+
+async function deposit(){
+  await api(`/accounts/${currentAccountId}/deposit`, {
+    method:"POST",
+    body: JSON.stringify({amount: Number(moneyAmount.value)})
+  });
+  getAccount(new Event("submit"));
+}
+
+async function withdraw(){
+  await api(`/accounts/${currentAccountId}/withdraw`, {
+    method:"POST",
+    body: JSON.stringify({amount: Number(moneyAmount.value)})
+  });
+  getAccount(new Event("submit"));
+}
+
+async function loadAll(){
+  loadCustomers();
+}
+loadAll();
+</script>
+</body>
+</html>

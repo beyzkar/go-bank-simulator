@@ -26,10 +26,18 @@ func main() {
 
 	r := gin.Default()
 
+	r.Static("/static", "./static")
+	r.LoadHTMLGlob("templates/*")
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "pong",
 		})
+	})
+
+	r.LoadHTMLGlob("templates/*")
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(200, "index.html", gin.H{})
 	})
 
 	r.POST("/seed", handlers.SeedDatabase)
