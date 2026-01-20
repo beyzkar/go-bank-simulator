@@ -52,6 +52,14 @@ func GetCustomerByID(id uint) (*models.Customer, error) {
 	return repositorys.GetCustomerByID(id)
 }
 
+func GetCustomerByName(name string) (*models.Customer, error) {
+	customer, err := repositorys.FindCustomerByName(name)
+	if err != nil {
+		return nil, errors.New("müşteri bulunamadı")
+	}
+	return customer, nil
+}
+
 // Tüm müşterileri getirir
 func GetAllCustomers() ([]models.Customer, error) {
 	return repositorys.GetAllCustomers()

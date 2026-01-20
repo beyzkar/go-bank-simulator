@@ -54,6 +54,9 @@ func main() {
 	r.DELETE("/accounts/:id", handlers.DeleteAccount)
 	r.GET("/customers/:id/accounts", handlers.GetAccountsByCustomerID)
 
+	//Müşteri ismiyle hesap sorgu
+	r.GET("/accounts/by-customer-name/:name", handlers.GetAccountByCustomerName)
+
 	// Transactions
 	r.POST("/accounts/:id/deposit", handlers.Deposit)
 	r.POST("/accounts/:id/withdraw", handlers.Withdraw)

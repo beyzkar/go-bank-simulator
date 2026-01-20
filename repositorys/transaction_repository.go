@@ -30,6 +30,18 @@ func GetTransactionsByAccountID(accountID uint) ([]models.Transaction, error) {
 	}
 	return txs, nil
 }
+func FindLastTransactionByAccountID(accountID uint) (*models.Transaction, error) {
+	var tx models.Transaction
+	err := database.DB.
+		Where("account_id = ?", accountID).
+		Order("created_at desc").
+		First(&tx).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return &tx, nil
+}
 
 // ---- Para hareketi (Deposit / Withdraw) ----
 // Bu fonksiyonlar Account balance + Transaction kaydını TEK işlemde yapar.

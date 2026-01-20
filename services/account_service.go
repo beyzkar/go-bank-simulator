@@ -41,6 +41,10 @@ func GetAccountByID(id uint) (*models.Account, error) {
 	return repositorys.GetAccountByID(id)
 }
 
+func GetAccountByCustomerID(customerID uint) (*models.Account, error) {
+	return repositorys.FindAccountByCustomerID(customerID)
+}
+
 // CustomerID ile hesapları getirir
 func GetAccountsByCustomerID(customerID uint) ([]models.Account, error) {
 	if customerID == 0 {

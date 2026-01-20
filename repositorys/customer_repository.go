@@ -41,6 +41,14 @@ func GetCustomerByID(id uint) (*models.Customer, error) { //(id uint) bu kısım
 
 	return &customer, nil //eğer bir hata yoksa customerı döntür hatayı da nill olarak döndür
 }
+func FindCustomerByName(name string) (*models.Customer, error) {
+	var customer models.Customer
+	result := database.DB.Where("name = ?", name).First(&customer)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &customer, nil
+}
 
 // Tüm müşterileri getirir
 func GetAllCustomers() ([]models.Customer, error) {

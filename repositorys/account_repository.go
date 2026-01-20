@@ -29,6 +29,14 @@ func GetAccountsByCustomerID(customerID uint) ([]models.Account, error) {
 	}
 	return accounts, nil
 }
+func FindAccountByCustomerID(customerID uint) (*models.Account, error) {
+	var acc models.Account
+	err := database.DB.Where("customer_id = ?", customerID).First(&acc).Error
+	if err != nil {
+		return nil, err
+	}
+	return &acc, nil
+}
 
 // Hesabı günceller (balance vb. değişikliklerde kullanılır)
 func UpdateAccount(account *models.Account) error {

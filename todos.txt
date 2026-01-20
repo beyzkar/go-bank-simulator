@@ -1,0 +1,6 @@
+1- delete yaparken onaylama butonu çıksın
+2- para transferi kısmı olsun (isimden isime olsun ama birebir aynı olmalı ve customer ID'leri de yazmalı)
+3- müşteri eklerken güncel bakiyesini de eklemeli 
+4- hesap işlemlerinde müşteri account ID'yle çağırmak yerine isim soyisimle çağırsın ve gelen çıktıların 
+en üstünde isim soyisim yazsın
+5- para yatırma ve çekme kısmı çalışmıyor, bu işlemleri yapınca güncel bakiyeyi aşağısında yazdırsın

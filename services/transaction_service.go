@@ -21,6 +21,10 @@ func GetTransactionsByAccountID(accountID uint) ([]models.Transaction, error) {
 	return repositorys.GetTransactionsByAccountID(accountID)
 }
 
+func GetLastTransactionByAccountID(accountID uint) (*models.Transaction, error) {
+	return repositorys.FindLastTransactionByAccountID(accountID)
+}
+
 // ---- Business Logic ----
 
 func Deposit(accountID uint, amount float64) (*models.Transaction, error) {
