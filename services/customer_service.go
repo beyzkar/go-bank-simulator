@@ -42,6 +42,26 @@ func CreateCustomer(name, email string) (*models.Customer, error) {
 
 	return customer, nil
 }
+func CreateCustomerWithAccount(name, email string, balance float64) (*models.Customer, *models.Account, error) {
+
+	// 1️⃣ Müşteriyi oluştur
+	customer, err := CreateCustomer(name, email)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 2️⃣ Hesap oluştur
+	account := &models.Account{
+		CustomerID: customer.ID,
+		Balance:    balance,
+	}
+
+	if err := repositorys.CreateAccount(account); err != nil {
+		return nil, nil, err
+	}
+
+	return customer, account, nil
+}
 
 // ID ile müşteri getirir
 func GetCustomerByID(id uint) (*models.Customer, error) {
@@ -65,11 +85,32 @@ func GetAllCustomers() ([]models.Customer, error) {
 	return repositorys.GetAllCustomers()
 }
 
-// Müşteri siler
 func DeleteCustomer(id uint) error {
-	if id == 0 { //bu ksıım business logic
-		return errors.New("geçersiz müşteri id") // business logic değil, teknik işlem git veritabanından getir
+	// 1. Hesapları sil
+	if err := repositorys.DeleteAccountsByCustomerID(id); err != nil {
+		return err
 	}
 
+	// 2. Müşteriyi sil
 	return repositorys.DeleteCustomer(id)
+}
+func SearchCustomersByName(q string) ([]models.Customer, error) {
+	if strings.TrimSpace(q) == "" {
+		return []models.Customer{}, nil
+	}
+	return repositorys.SearchCustomersByName(q)
+}
+
+func GetCustomerByExactName(name string) (*models.Customer, error) {
+	list, err := repositorys.FindCustomerByExactName(name)
+	if err != nil {
+		return nil, err
+	}
+	if len(list) == 0 {
+		return nil, errors.New("müşteri bulunamadı")
+	}
+	if len(list) > 1 {
+		return nil, errors.New("aynı isimde birden fazla müşteri var (ID ile seç)")
+	}
+	return &list[0], nil
 }

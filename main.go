@@ -26,20 +26,25 @@ func main() {
 
 	r := gin.Default()
 
+	// Static dosyalar (JS, CSS)
 	r.Static("/static", "./static")
+
+	// HTML şablonları
 	r.LoadHTMLGlob("templates/*")
 
+	// Test endpoint
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "pong",
 		})
 	})
 
-	r.LoadHTMLGlob("templates/*")
+	// Ana sayfa
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(200, "index.html", gin.H{})
 	})
 
+	// Seed (örnek veriler)
 	r.POST("/seed", handlers.SeedDatabase)
 
 	// Customers
@@ -47,15 +52,20 @@ func main() {
 	r.GET("/customers", handlers.GetAllCustomers)
 	r.GET("/customers/:id", handlers.GetCustomerByID)
 	r.DELETE("/customers/:id", handlers.DeleteCustomer)
+	r.GET("/customers/search", handlers.SearchCustomers)
 
 	// Accounts
 	r.POST("/accounts", handlers.CreateAccount)
+
+	// Özel (isimle arama / detay) route'lar önce
+	r.GET("/accounts/by-customer-name/:name", handlers.GetAccountByCustomerName)
+	r.GET("/accounts/:id/details", handlers.GetAccountDetailsByID)
+
+	// Genel ID route'ları sonra
 	r.GET("/accounts/:id", handlers.GetAccountByID)
 	r.DELETE("/accounts/:id", handlers.DeleteAccount)
-	r.GET("/customers/:id/accounts", handlers.GetAccountsByCustomerID)
 
-	//Müşteri ismiyle hesap sorgu
-	r.GET("/accounts/by-customer-name/:name", handlers.GetAccountByCustomerName)
+	r.GET("/customers/:id/accounts", handlers.GetAccountsByCustomerID)
 
 	// Transactions
 	r.POST("/accounts/:id/deposit", handlers.Deposit)
@@ -63,14 +73,13 @@ func main() {
 	r.GET("/transactions/:id", handlers.GetTransactionByID)
 	r.GET("/accounts/:id/transactions", handlers.GetTransactionsByAccountID)
 
-	//Transfer
+	// Transfer
 	r.POST("/accounts/transfer", handlers.Transfer)
 
-	//log.Println("DB hazir. Tablolar olusturuldu.")
 	/*
-		burada fmt yerine log kullanmamızın sebebi, log paketinin zaman damgası eklemesi ve daha profesyonel bir çıktı sağlamasıdır.
-		bu sayede herhnagi bir hata olduğunda veya bilgi vermek istediğimizde, zaman bilgisiyle birlikte daha anlamlı loglar elde ederiz.
-		log.println: kayıt tutar
+		burada fmt yerine log kullanmamızın sebebi,
+		log paketinin zaman damgası eklemesi ve
+		daha profesyonel bir çıktı sağlamasıdır.
 	*/
 
 	log.Println("Server 8080 portunda çalışıyor...")

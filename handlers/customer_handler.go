@@ -9,8 +9,9 @@ import (
 )
 
 type createCustomerReq struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Name    string  `json:"name"`
+	Email   string  `json:"email"`
+	Balance float64 `json:"balance"`
 }
 
 func CreateCustomer(c *gin.Context) {
@@ -20,13 +21,18 @@ func CreateCustomer(c *gin.Context) {
 		return
 	}
 
-	customer, err := services.CreateCustomer(req.Name, req.Email)
+	// ✅ müşteri + başlangıç bakiyeli account oluştur
+	customer, account, err := services.CreateCustomerWithAccount(req.Name, req.Email, req.Balance)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, customer)
+	// ✅ ikisini birlikte döndür
+	c.JSON(http.StatusCreated, gin.H{
+		"customer": customer,
+		"account":  account,
+	})
 }
 
 func GetAllCustomers(c *gin.Context) {
@@ -67,4 +73,14 @@ func DeleteCustomer(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func SearchCustomers(c *gin.Context) {
+	q := c.Query("q")
+	customers, err := services.SearchCustomersByName(q)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, customers)
 }

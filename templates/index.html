@@ -24,6 +24,7 @@
         <button class="btn btn-primary" onclick="searchCustomer()">Ara</button>
       </div>
       <div id="searchResult" class="mt-3"></div>
+      <div id="accounts" class="mt-3"></div>
     </div>
   </div>
 
@@ -33,13 +34,19 @@
       <h5>Müşteriler</h5>
 
       <form class="row g-2 mb-3" onsubmit="createCustomer(event)">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <input id="custName" class="form-control" placeholder="Ad Soyad" required>
         </div>
-        <div class="col-md-4">
-          <input id="custEmail" class="form-control" placeholder="Email" required>
+        <div class="col-md-3">
+          <input id="custEmail" class="form-control" placeholder="Email" type="email" required>
         </div>
-        <div class="col-md-4 d-grid">
+
+        <!-- ✅ YENİ: Başlangıç bakiyesi -->
+        <div class="col-md-3">
+          <input id="custBalance" class="form-control" placeholder="Başlangıç Bakiye (₺)" type="number" min="0" step="0.01" required>
+        </div>
+
+        <div class="col-md-3 d-grid">
           <button class="btn btn-success">Ekle</button>
         </div>
       </form>
@@ -71,7 +78,7 @@
 
       <div class="row g-2 mt-3">
         <div class="col-md-4">
-          <input id="moneyAmount" class="form-control" placeholder="Tutar">
+          <input id="moneyAmount" class="form-control" placeholder="Tutar" type="number" min="0.01" step="0.01">
         </div>
         <div class="col-md-4 d-grid">
           <button class="btn btn-success" onclick="deposit()">Para Yatır</button>
@@ -80,6 +87,8 @@
           <button class="btn btn-danger" onclick="withdraw()">Para Çek</button>
         </div>
       </div>
+
+      <div id="opMsg" class="mt-3"></div>
     </div>
   </div>
 
@@ -90,6 +99,15 @@ const api = (url, opts={}) => fetch(url, {
   headers: {"Content-Type":"application/json"},
   ...opts
 });
+
+function showOpMsg(text, ok=true){
+  const el = document.getElementById("opMsg");
+  el.innerHTML = `<div class="alert ${ok ? "alert-success" : "alert-danger"} mb-0">${text}</div>`;
+}
+
+function clearOpMsg(){
+  document.getElementById("opMsg").innerHTML = "";
+}
 
 async function loadCustomers(){
   const r = await api("/customers");
@@ -102,9 +120,9 @@ async function loadCustomers(){
         <td>${c.ID}</td>
         <td>${c.Name}</td>
         <td>${c.Email}</td>
-        <td>
+        <td class="text-end">
           <button class="btn btn-sm btn-outline-danger"
-            onclick="deleteCustomer(${c.ID})">Sil</button>
+            onclick="deleteCustomer(${c.ID}, '${String(c.Name).replace(/'/g,"\\'")}')">Sil</button>
         </td>
       </tr>`;
   });
@@ -112,69 +130,226 @@ async function loadCustomers(){
 
 async function createCustomer(e){
   e.preventDefault();
-  await api("/customers", {
+  clearOpMsg();
+
+  const name = document.getElementById("custName").value;
+  const email = document.getElementById("custEmail").value;
+
+  // ✅ YENİ: balance al
+  const balance = Number(document.getElementById("custBalance").value);
+
+  const res = await api("/customers", {
     method:"POST",
     body: JSON.stringify({
-      name: custName.value,
-      email: custEmail.value
+      name,
+      email,
+      balance
     })
   });
+
+  const data = await res.json().catch(()=> ({}));
+  if(!res.ok){
+    showOpMsg(data.error || "Müşteri eklenemedi", false);
+    return;
+  }
+
   e.target.reset();
+  showOpMsg("Müşteri eklendi ✅");
   loadCustomers();
 }
 
-async function deleteCustomer(id){
-  await api(`/customers/${id}`, {method:"DELETE"});
+async function deleteCustomer(id, name){
+  const ok = confirm(`${name} (ID:${id}) silinsin mi?`);
+  if(!ok) return;
+
+  clearOpMsg();
+  const res = await api(`/customers/${id}`, {method:"DELETE"});
+  if(!res.ok){
+    const data = await res.json().catch(()=> ({}));
+    showOpMsg(data.error || "Silme başarısız", false);
+    return;
+  }
+
+  showOpMsg("Müşteri silindi ✅");
   loadCustomers();
 }
 
 async function searchCustomer(){
-  const name = searchName.value.toLowerCase();
-  const r = await api("/customers");
-  const data = await r.json();
-  const found = data.filter(c => c.Name.toLowerCase().includes(name));
-  searchResult.innerHTML = found.map(c =>
-    `<div class="alert alert-info">
-      <b>${c.Name}</b> – ${c.Email} (ID: ${c.ID})
+  clearOpMsg();
+  const q = document.getElementById("searchName").value.trim();
+  if(!q){
+    document.getElementById("searchResult").innerHTML = `<div class="text-muted">İsim yaz.</div>`;
+    return;
+  }
+
+  // Yeni endpoint: /customers/search?q=Ali
+  let res = await api(`/customers/search?q=${encodeURIComponent(q)}`);
+  let found = await res.json().catch(()=> []);
+
+  // Fallback: endpoint yoksa /customers üzerinden filtrele
+  if(!res.ok){
+    const r2 = await api("/customers");
+    const all = await r2.json().catch(()=> []);
+    found = all.filter(c => (c.Name || "").toLowerCase().includes(q.toLowerCase()));
+  }
+
+  if(!found || found.length === 0){
+    document.getElementById("searchResult").innerHTML =
+      `<div class="alert alert-warning mb-0">Sonuç bulunamadı.</div>`;
+    document.getElementById("accounts").innerHTML = "";
+    return;
+  }
+
+  document.getElementById("searchResult").innerHTML = found.map(c =>
+    `<div class="alert alert-info d-flex justify-content-between align-items-center">
+      <div>
+        <b>${c.Name}</b> – ${c.Email} (ID: ${c.ID})
+      </div>
+      <button class="btn btn-sm btn-outline-primary" onclick="loadAccounts(${c.ID}, '${String(c.Name).replace(/'/g,"\\'")}')">Hesapları</button>
     </div>`
   ).join("");
+}
+
+async function loadAccounts(customerId, customerName){
+  const res = await api(`/customers/${customerId}/accounts`);
+  const accounts = await res.json().catch(()=> []);
+
+  if(!res.ok){
+    document.getElementById("accounts").innerHTML = `<div class="text-danger">Hesaplar getirilemedi.</div>`;
+    return;
+  }
+  if(!accounts || accounts.length === 0){
+    document.getElementById("accounts").innerHTML =
+      `<div class="alert alert-secondary mb-0">${customerName} için hesap yok.</div>`;
+    return;
+  }
+
+  // Her hesap için details alalım (isim + son işlem + bakiye)
+  let html = `<div class="fw-bold mb-2">${customerName} Hesapları</div>`;
+  for(const a of accounts){
+    const accId = a.ID;
+    const dres = await api(`/accounts/${accId}/details`);
+    const d = await dres.json().catch(()=> ({}));
+
+    if(dres.ok){
+      html += `
+        <div class="bg-dark text-white p-3 rounded mb-2">
+          <div class="fw-bold">${d.customerName}</div>
+          <div><b>Account ID:</b> ${d.accountId}</div>
+          <div><b>Customer ID:</b> ${d.customerId}</div>
+          <div><b>Bakiye:</b> ${d.balance} ₺</div>
+          <div class="mt-1"><b>Son İşlem:</b> ${d.lastAction}</div>
+          <button class="btn btn-sm btn-outline-light mt-2" onclick="fillAccount(${d.accountId})">Bu hesabı seç</button>
+        </div>
+      `;
+    } else {
+      html += `<div class="alert alert-danger">Account ${accId} detayları alınamadı.</div>`;
+    }
+  }
+
+  document.getElementById("accounts").innerHTML = html;
+}
+
+function fillAccount(accountId){
+  document.getElementById("accId").value = accountId;
+  // otomatik getir
+  getAccount(new Event("submit"));
 }
 
 let currentAccountId = null;
 
 async function getAccount(e){
   e.preventDefault();
-  currentAccountId = accId.value;
-  const r = await api(`/accounts/${currentAccountId}`);
-  const a = await r.json();
-  accountCard.innerHTML = `
+  clearOpMsg();
+
+  currentAccountId = document.getElementById("accId").value;
+  if(!currentAccountId){
+    showOpMsg("Account ID gir.", false);
+    return;
+  }
+
+  // Artık details endpoint’i kullanıyoruz (isim + son işlem)
+  const r = await api(`/accounts/${currentAccountId}/details`);
+  const d = await r.json().catch(()=> ({}));
+
+  if(!r.ok){
+    showOpMsg(d.error || "Hesap bulunamadı", false);
+    document.getElementById("accountCard").innerHTML = "";
+    return;
+  }
+
+  document.getElementById("accountCard").innerHTML = `
     <div class="card bg-dark text-white">
       <div class="card-body">
-        <p><b>Account ID:</b> ${a.ID}</p>
-        <p><b>Customer ID:</b> ${a.CustomerID}</p>
-        <p><b>Bakiye:</b> ${a.Balance} ₺</p>
+        <h5 class="mb-3">${d.customerName}</h5>
+        <p class="mb-1"><b>Account ID:</b> ${d.accountId}</p>
+        <p class="mb-1"><b>Customer ID:</b> ${d.customerId}</p>
+        <p class="mb-2"><b>Bakiye:</b> ${d.balance} ₺</p>
+        <p class="mb-0"><b>Son İşlem:</b> ${d.lastAction}</p>
       </div>
     </div>`;
 }
 
 async function deposit(){
-  await api(`/accounts/${currentAccountId}/deposit`, {
+  clearOpMsg();
+  if(!currentAccountId){
+    showOpMsg("Önce bir hesap getir.", false);
+    return;
+  }
+
+  const amount = Number(document.getElementById("moneyAmount").value);
+  if(!Number.isFinite(amount) || amount <= 0){
+    showOpMsg("Geçerli bir tutar gir.", false);
+    return;
+  }
+
+  const res = await api(`/accounts/${currentAccountId}/deposit`, {
     method:"POST",
-    body: JSON.stringify({amount: Number(moneyAmount.value)})
+    body: JSON.stringify({amount})
   });
-  getAccount(new Event("submit"));
+  const data = await res.json().catch(()=> ({}));
+
+  if(!res.ok){
+    showOpMsg(data.error || "Para yatırma başarısız", false);
+    return;
+  }
+
+  showOpMsg("Para yatırıldı ✅");
+  document.getElementById("moneyAmount").value = "";
+  getAccount(new Event("submit")); // güncel bakiye + son işlem
 }
 
 async function withdraw(){
-  await api(`/accounts/${currentAccountId}/withdraw`, {
+  clearOpMsg();
+  if(!currentAccountId){
+    showOpMsg("Önce bir hesap getir.", false);
+    return;
+  }
+
+  const amount = Number(document.getElementById("moneyAmount").value);
+  if(!Number.isFinite(amount) || amount <= 0){
+    showOpMsg("Geçerli bir tutar gir.", false);
+    return;
+  }
+
+  const res = await api(`/accounts/${currentAccountId}/withdraw`, {
     method:"POST",
-    body: JSON.stringify({amount: Number(moneyAmount.value)})
+    body: JSON.stringify({amount})
   });
-  getAccount(new Event("submit"));
+  const data = await res.json().catch(()=> ({}));
+
+  if(!res.ok){
+    showOpMsg(data.error || "Para çekme başarısız", false);
+    return;
+  }
+
+  showOpMsg("Para çekildi ✅");
+  document.getElementById("moneyAmount").value = "";
+  getAccount(new Event("submit")); // güncel bakiye + son işlem
 }
 
 async function loadAll(){
-  loadCustomers();
+  await loadCustomers();
 }
 loadAll();
 </script>
