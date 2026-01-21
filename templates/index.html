@@ -205,7 +205,7 @@ async function searchCustomer(){
       <div>
         <b>${c.Name}</b> – ${c.Email} (ID: ${c.ID})
       </div>
-      <button class="btn btn-sm btn-outline-primary" onclick="loadAccounts(${c.ID}, '${String(c.Name).replace(/'/g,"\\'")}')">Hesapları</button>
+      <button class="btn btn-sm btn-outline-primary" onclick="loadAccounts(${c.ID}, '${String(c.Name).replace(/'/g,"\\'")}')">Hesabı Göster</button>
     </div>`
   ).join("");
 }
@@ -225,7 +225,7 @@ async function loadAccounts(customerId, customerName){
   }
 
   // Her hesap için details alalım (isim + son işlem + bakiye)
-  let html = `<div class="fw-bold mb-2">${customerName} Hesapları</div>`;
+  let html = `<div class="fw-bold mb-2">${customerName} Hesabı</div>`;
   for(const a of accounts){
     const accId = a.ID;
     const dres = await api(`/accounts/${accId}/details`);

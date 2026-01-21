@@ -16,13 +16,25 @@ async function safeJson(res) {
   try { return await res.json(); } catch { return null; }
 }
 
-// =========================
+// GLOBAL STATE (seçili müşteri)
+let selectedCustomerId = null;
+let selectedCustomerName = "";
+
+// HTML’de bazen result bazen searchResult kullanılmış olabiliyor
+function getSearchResultEl() {
+  return document.getElementById("searchResult") || document.getElementById("result");
+}
+
 // 1) Müşteri Arama (isimle)
-// =========================
 async function searchCustomerByName() {
   const q = document.getElementById("searchName").value.trim();
-  const resultEl = document.getElementById("result");
+  const resultEl = getSearchResultEl();
   const accountsEl = document.getElementById("accounts");
+
+  if (!resultEl) {
+    console.error("Arama sonucu alanı bulunamadı. (searchResult veya result id'si yok)");
+    return;
+  }
 
   resultEl.innerHTML = "";
   accountsEl.innerHTML = "";
@@ -35,6 +47,7 @@ async function searchCustomerByName() {
   // Tercih: backend search endpoint
   let customers = [];
   let res = await fetch(`/customers/search?q=${encodeURIComponent(q)}`);
+
   if (res.ok) {
     customers = (await safeJson(res)) || [];
   } else {
@@ -63,7 +76,10 @@ async function searchCustomerByName() {
           <div class="text-muted small">${email} (ID: ${id})</div>
         </div>
         <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-primary" onclick="loadAccounts(${id}, '${String(name).replace(/'/g, "\\'")}')">Hesapları</button>
+          <button class="btn btn-sm btn-outline-primary"
+            onclick="selectCustomerAndLoad(${id}, '${String(name).replace(/'/g, "\\'")}')">
+            Hesabı Göster
+          </button>
           <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer(${id})">Sil</button>
         </div>
       </div>
@@ -73,9 +89,14 @@ async function searchCustomerByName() {
   resultEl.innerHTML = html;
 }
 
-// =========================
+// Seçili müşteriyi kaydet + hesaplarını çek
+async function selectCustomerAndLoad(customerId, customerName) {
+  selectedCustomerId = Number(customerId);
+  selectedCustomerName = customerName || "";
+  await loadAccounts(selectedCustomerId, selectedCustomerName);
+}
+
 // 2) Müşteri silme (onaylı)
-// =========================
 async function deleteCustomer(id) {
   const ok = confirm(`ID ${id} olan müşteriyi silmek istediğine emin misin?`);
   if (!ok) return;
@@ -87,13 +108,21 @@ async function deleteCustomer(id) {
     return;
   }
   alert("Müşteri silindi ✅");
-  searchCustomerByName(); // listeyi yenile
+
+  // Eğer seçili müşteri silindiyse ekranı temizle
+  if (selectedCustomerId === Number(id)) {
+    selectedCustomerId = null;
+    selectedCustomerName = "";
+    const accountsEl = document.getElementById("accounts");
+    if (accountsEl) accountsEl.innerHTML = "";
+  }
+
+  // arama listesini yenile
+  await searchCustomerByName();
 }
 
-// =========================
 // 3) Hesapları Listele
 // - Her hesabın detayını /accounts/:id/details ile çek
-// =========================
 async function loadAccounts(customerId, customerName = "") {
   const accountsEl = document.getElementById("accounts");
   accountsEl.innerHTML = `<div class="text-muted">Hesaplar yükleniyor...</div>`;
@@ -149,18 +178,16 @@ function renderAccountCard(d) {
       <div class="mt-2"><b>Son İşlem:</b> ${lastAction}</div>
 
       <div class="mt-3 d-flex gap-2">
-        <button class="btn btn-sm btn-success" onclick="deposit(${accountId}, ${customerId})">Para Yatır</button>
-        <button class="btn btn-sm btn-warning" onclick="withdraw(${accountId}, ${customerId})">Para Çek</button>
+        <button class="btn btn-sm btn-success" onclick="deposit(${accountId})">Para Yatır</button>
+        <button class="btn btn-sm btn-warning" onclick="withdraw(${accountId})">Para Çek</button>
       </div>
     </div>
   `;
 }
 
-// =========================
 // 4) Para Yatır / Çek
-// - işlem sonrası hesabı yenile
-// =========================
-async function deposit(accountId, customerId) {
+// - işlem sonrası hesabı yenile (seçili müşteriye göre)
+async function deposit(accountId) {
   const amountStr = prompt("Yatırılacak tutar:");
   if (amountStr === null) return;
 
@@ -184,12 +211,13 @@ async function deposit(accountId, customerId) {
 
   alert("Para yatırıldı ✅");
 
-  // Güncel kartı görmek için aynı müşterinin hesaplarını yeniden yükle
-  // customerId varsa kullanıyoruz
-  await loadAccounts(customerId);
+  // seçili müşteri varsa onun hesaplarını tekrar çek
+  if (selectedCustomerId) {
+    await loadAccounts(selectedCustomerId, selectedCustomerName);
+  }
 }
 
-async function withdraw(accountId, customerId) {
+async function withdraw(accountId) {
   const amountStr = prompt("Çekilecek tutar:");
   if (amountStr === null) return;
 
@@ -212,5 +240,10 @@ async function withdraw(accountId, customerId) {
   }
 
   alert("Para çekildi ✅");
-  await loadAccounts(customerId);
+
+  if (selectedCustomerId) {
+    await loadAccounts(selectedCustomerId, selectedCustomerName);
+  }
 }
+
+  const searchCustomer = searchCustomerByName;
