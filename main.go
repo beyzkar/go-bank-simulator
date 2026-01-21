@@ -76,6 +76,10 @@ func main() {
 	// Transfer
 	r.POST("/accounts/transfer", handlers.Transfer)
 
+	// ✅ CustomerID ile Transfer
+	// NOT: Handler fonksiyon adın TransferByCustomer ise bu satır doğru.
+	// Eğer TransferByCustomerID kullanacaksan handler adını da öyle yapmalısın.
+
 	/*
 		burada fmt yerine log kullanmamızın sebebi,
 		log paketinin zaman damgası eklemesi ve

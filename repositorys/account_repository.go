@@ -13,8 +13,7 @@ func CreateAccount(account *models.Account) error {
 // ID ile hesap getirir
 func GetAccountByID(id uint) (*models.Account, error) {
 	var account models.Account
-	err := database.DB.First(&account, id).Error
-	if err != nil {
+	if err := database.DB.First(&account, id).Error; err != nil {
 		return nil, err
 	}
 	return &account, nil
@@ -23,16 +22,16 @@ func GetAccountByID(id uint) (*models.Account, error) {
 // Bir müşterinin tüm hesaplarını getirir
 func GetAccountsByCustomerID(customerID uint) ([]models.Account, error) {
 	var accounts []models.Account
-	err := database.DB.Where("customer_id = ?", customerID).Find(&accounts).Error
-	if err != nil {
+	if err := database.DB.Where("customer_id = ?", customerID).Find(&accounts).Error; err != nil {
 		return nil, err
 	}
 	return accounts, nil
 }
+
+// ✅ Müşterinin ilk hesabını getirir (transfer vs için kullanacağız)
 func FindAccountByCustomerID(customerID uint) (*models.Account, error) {
 	var acc models.Account
-	err := database.DB.Where("customer_id = ?", customerID).First(&acc).Error
-	if err != nil {
+	if err := database.DB.Where("customer_id = ?", customerID).First(&acc).Error; err != nil {
 		return nil, err
 	}
 	return &acc, nil

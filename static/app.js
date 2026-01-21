@@ -25,9 +25,22 @@ function getSearchResultEl() {
   return document.getElementById("searchResult") || document.getElementById("result");
 }
 
+// Transfer mesaj alanı (varsa)
+function showTransferMsg(text, ok = true) {
+  const el = document.getElementById("transferMsg");
+  if (!el) return; // HTML'de transfer alanı yoksa sessiz geç
+  el.innerHTML = `<div class="alert ${ok ? "alert-success" : "alert-danger"} mb-0">${text}</div>`;
+}
+
+function clearTransferMsg() {
+  const el = document.getElementById("transferMsg");
+  if (!el) return;
+  el.innerHTML = "";
+}
+
 // 1) Müşteri Arama (isimle)
 async function searchCustomerByName() {
-  const q = document.getElementById("searchName").value.trim();
+  const q = (document.getElementById("searchName")?.value || "").trim();
   const resultEl = getSearchResultEl();
   const accountsEl = document.getElementById("accounts");
 
@@ -35,9 +48,17 @@ async function searchCustomerByName() {
     console.error("Arama sonucu alanı bulunamadı. (searchResult veya result id'si yok)");
     return;
   }
+  if (!accountsEl) {
+    console.error("accounts alanı bulunamadı. (accounts id'si yok)");
+    return;
+  }
 
   resultEl.innerHTML = "";
   accountsEl.innerHTML = "";
+
+  // Seçimi sıfırla
+  selectedCustomerId = null;
+  selectedCustomerName = "";
 
   if (!q) {
     resultEl.innerHTML = `<div class="text-muted">Aramak için bir isim yaz.</div>`;
@@ -54,7 +75,7 @@ async function searchCustomerByName() {
     // Fallback: tüm müşterileri çekip filtrele
     res = await fetch("/customers");
     const all = (await safeJson(res)) || [];
-    customers = all.filter(c => toLowerSafe(pick(c, ["Name","name"])) .includes(toLowerSafe(q)));
+    customers = all.filter(c => toLowerSafe(pick(c, ["Name","name"])).includes(toLowerSafe(q)));
   }
 
   if (!Array.isArray(customers) || customers.length === 0) {
@@ -89,6 +110,11 @@ async function searchCustomerByName() {
   resultEl.innerHTML = html;
 }
 
+// HTML’de button onclick="searchCustomer()" var diye alias
+async function searchCustomer() {
+  return searchCustomerByName();
+}
+
 // Seçili müşteriyi kaydet + hesaplarını çek
 async function selectCustomerAndLoad(customerId, customerName) {
   selectedCustomerId = Number(customerId);
@@ -117,7 +143,7 @@ async function deleteCustomer(id) {
     if (accountsEl) accountsEl.innerHTML = "";
   }
 
-  // arama listesini yenile
+  // Arama listesini yenile (input aynı kalsın)
   await searchCustomerByName();
 }
 
@@ -125,6 +151,8 @@ async function deleteCustomer(id) {
 // - Her hesabın detayını /accounts/:id/details ile çek
 async function loadAccounts(customerId, customerName = "") {
   const accountsEl = document.getElementById("accounts");
+  if (!accountsEl) return;
+
   accountsEl.innerHTML = `<div class="text-muted">Hesaplar yükleniyor...</div>`;
 
   const res = await fetch(`/customers/${customerId}/accounts`);
@@ -149,7 +177,6 @@ async function loadAccounts(customerId, customerName = "") {
     if (dres.ok && d) detailList.push(d);
   }
 
-  // UI
   let html = `<div class="mb-2 fw-bold">Seçili Müşteri: ${customerName || ("Customer ID: " + customerId)}</div>`;
 
   detailList.forEach(d => {
@@ -161,9 +188,9 @@ async function loadAccounts(customerId, customerName = "") {
 
 function renderAccountCard(d) {
   // d: {customerName, accountId, customerId, balance, lastAction}
-  const customerName = pick(d, ["customerName"]);
-  const accountId = pick(d, ["accountId"]);
-  const customerId = pick(d, ["customerId"]);
+  const customerName = pick(d, ["customerName"], "");
+  const accountId = pick(d, ["accountId"], "");
+  const customerId = pick(d, ["customerId"], "");
   const balance = pick(d, ["balance"], 0);
   const lastAction = pick(d, ["lastAction"], "Henüz işlem yok");
 
@@ -178,8 +205,8 @@ function renderAccountCard(d) {
       <div class="mt-2"><b>Son İşlem:</b> ${lastAction}</div>
 
       <div class="mt-3 d-flex gap-2">
-        <button class="btn btn-sm btn-success" onclick="deposit(${accountId})">Para Yatır</button>
-        <button class="btn btn-sm btn-warning" onclick="withdraw(${accountId})">Para Çek</button>
+        <button type="button" class="btn btn-sm btn-success" onclick="deposit(${accountId})">Para Yatır</button>
+        <button type="button" class="btn btn-sm btn-warning" onclick="withdraw(${accountId})">Para Çek</button>
       </div>
     </div>
   `;
@@ -197,6 +224,7 @@ async function deposit(accountId) {
     return;
   }
 
+  // ✅ Senin route’un: POST /accounts/:id/deposit
   const res = await fetch(`/accounts/${accountId}/deposit`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -227,6 +255,7 @@ async function withdraw(accountId) {
     return;
   }
 
+  // ✅ Senin route’un: POST /accounts/:id/withdraw
   const res = await fetch(`/accounts/${accountId}/withdraw`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -246,4 +275,52 @@ async function withdraw(accountId) {
   }
 }
 
-  const searchCustomer = searchCustomerByName;
+// ✅ CustomerID ile transfer (web UI için)
+async function transferByCustomer() {
+  clearTransferMsg();
+
+  const fromCustomerId = Number(document.getElementById("fromCustomerId")?.value);
+  const toCustomerId = Number(document.getElementById("toCustomerId")?.value);
+  const amount = Number(document.getElementById("transferAmount")?.value);
+
+  if (!Number.isFinite(fromCustomerId) || fromCustomerId <= 0 ||
+      !Number.isFinite(toCustomerId) || toCustomerId <= 0 ||
+      !Number.isFinite(amount) || amount <= 0) {
+    showTransferMsg("Lütfen alanları doğru doldur.", false);
+    return;
+  }
+
+  const res = await fetch("/transfer/by-customer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fromCustomerId,
+      toCustomerId,
+      amount
+    })
+  });
+
+  const data = await safeJson(res);
+  if (!res.ok) {
+    showTransferMsg(data?.error || "Transfer başarısız", false);
+    return;
+  }
+
+  showTransferMsg("Transfer başarılı ✅", true);
+
+  // Eğer gönderici seçiliyse, hesabı otomatik yenile
+  if (selectedCustomerId && selectedCustomerId === fromCustomerId) {
+    await loadAccounts(selectedCustomerId, selectedCustomerName);
+  }
+}
+
+// ✅ Global alias’lar (HTML onclick ile uyum için)
+window.pick = pick;
+window.searchCustomerByName = searchCustomerByName;
+window.searchCustomer = searchCustomer;
+window.selectCustomerAndLoad = selectCustomerAndLoad;
+window.loadAccounts = loadAccounts;
+window.deleteCustomer = deleteCustomer;
+window.deposit = deposit;
+window.withdraw = withdraw;
+window.transferByCustomer = transferByCustomer;
