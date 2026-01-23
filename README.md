@@ -1,182 +1,131 @@
-🏦 Go Bank Simulator
+<!DOCTYPE html>
+<html lang="en">
 
-A full-featured Banking Simulation API built with Go (Golang) using Gin, GORM, and SQLite.
-This project simulates real-world banking operations such as customers, accounts, deposits, withdrawals, and transfers with transactional safety.
+<body>
 
-🚀 Features
+<div class="container py-5">
 
-✅ Customer management
-✅ Account management
-✅ Deposit & Withdraw operations
-✅ Account-to-account transfer
-✅ Customer-to-customer transfer
-✅ Transaction history
-✅ Safe database transactions (ACID)
-✅ RESTful API
-✅ Frontend integration (HTML + JS)
-✅ SQLite database
-✅ Clean architecture (Handler → Service → Repository)
+  <h1 class="mb-3">🏦 Go Bank Simulator</h1>
+  <p class="lead">
+    A full-featured <b>Banking Simulation API</b> built with <b>Go (Golang)</b>.
+  </p>
 
-🧱 Tech Stack
-Layer	Technology
-Language	Go (Golang)
-Framework	Gin
-ORM	GORM
-Database	SQLite
-Frontend	HTML + Bootstrap + Vanilla JS
-Architecture	Layered (Handler / Service / Repository)
-📁 Project Structure
+  <hr>
+
+  <h2>🚀 Features</h2>
+  <ul>
+    <li>Customer management</li>
+    <li>Account creation & management</li>
+    <li>Deposit & Withdraw</li>
+    <li>Account to Account Transfer</li>
+    <li>Customer to Customer Transfer</li>
+    <li>Transaction history</li>
+    <li>SQLite + GORM</li>
+    <li>RESTful API</li>
+    <li>Frontend integration</li>
+  </ul>
+
+  <h2>🧱 Tech Stack</h2>
+  <ul>
+    <li><b>Backend:</b> Go (Golang)</li>
+    <li><b>Framework:</b> Gin</li>
+    <li><b>ORM:</b> GORM</li>
+    <li><b>Database:</b> SQLite</li>
+    <li><b>Frontend:</b> HTML + Bootstrap + JS</li>
+  </ul>
+
+  <h2>📁 Project Structure</h2>
+  <pre>
 go-bank-simulator/
 │
 ├── database/
-│   └── db.go
-│
 ├── handlers/
-│   ├── account_handler.go
-│   ├── customer_handler.go
-│   ├── transaction_handler.go
-│
 ├── services/
-│   ├── account_service.go
-│   ├── transaction_service.go
-│
 ├── repositorys/
-│   ├── account_repository.go
-│   ├── customer_repository.go
-│   ├── transaction_repository.go
-│
 ├── models/
-│   ├── account.go
-│   ├── customer.go
-│   ├── transaction.go
-│
 ├── static/
-│   └── app.js
-│
 ├── templates/
-│   └── index.html
-│
 ├── main.go
 └── README.md
+  </pre>
 
-⚙️ Installation & Run
-1️⃣ Clone the repository
-git clone https://github.com/USERNAME/go-bank-simulator.git
+  <h2>⚙️ Installation</h2>
+  <pre>
+git clone https://github.com/beyzkar/go-bank-simulator.git
 cd go-bank-simulator
-
-2️⃣ Install dependencies
 go mod tidy
-
-3️⃣ Run the project
 go run main.go
+  </pre>
 
-4️⃣ Open in browser
-http://localhost:8080
+  <h2>🌐 Run</h2>
+  <pre>http://localhost:8080</pre>
 
-📌 API Endpoints
-🧑 Customer
-Method	Endpoint	Description
-POST	/customers	Create customer
-GET	/customers	List customers
-GET	/customers/:id	Get customer
-DELETE	/customers/:id	Delete customer
-GET	/customers/search	Search customer
-💳 Account
-Method	Endpoint	Description
-POST	/accounts	Create account
-GET	/accounts/:id	Get account
-GET	/customers/:id/accounts	Get customer accounts
-DELETE	/accounts/:id	Delete account
-💰 Transactions
-Method	Endpoint	Description
-POST	/accounts/:id/deposit	Deposit
-POST	/accounts/:id/withdraw	Withdraw
-GET	/accounts/:id/transactions	Transaction history
-🔁 Transfers
-Account → Account
+  <h2>📌 API Endpoints</h2>
+
+  <h4>Customers</h4>
+  <ul>
+    <li>POST /customers</li>
+    <li>GET /customers</li>
+    <li>GET /customers/:id</li>
+    <li>DELETE /customers/:id</li>
+  </ul>
+
+  <h4>Accounts</h4>
+  <ul>
+    <li>POST /accounts</li>
+    <li>GET /accounts/:id</li>
+    <li>GET /customers/:id/accounts</li>
+  </ul>
+
+  <h4>Transactions</h4>
+  <ul>
+    <li>POST /accounts/:id/deposit</li>
+    <li>POST /accounts/:id/withdraw</li>
+    <li>GET /accounts/:id/transactions</li>
+  </ul>
+
+  <h4>Transfers</h4>
+  <pre>
 POST /accounts/transfer
-
 {
   "fromAccountId": 1,
   "toAccountId": 2,
   "amount": 250
 }
+  </pre>
 
-Customer → Customer
+  <pre>
 POST /transfer/by-customer
-
 {
   "fromCustomerId": 1,
   "toCustomerId": 2,
   "amount": 250
 }
+  </pre>
 
+  <h2>🧠 Highlights</h2>
+  <ul>
+    <li>Transaction-safe money transfers</li>
+    <li>Automatic balance validation</li>
+    <li>Clean layered architecture</li>
+    <li>Multiple accounts per customer</li>
+    <li>Production-ready structure</li>
+  </ul>
 
-✔ Automatically selects the sender’s account with enough balance
-✔ Uses database transactions
-✔ Prevents invalid or unsafe transfers
+  <h2>📌 Future Improvements</h2>
+  <ul>
+    <li>JWT Authentication</li>
+    <li>Role-based access</li>
+    <li>Transaction reports</li>
+    <li>Docker support</li>
+    <li>Pagination & filtering</li>
+  </ul>
+  
+  <p>
+    ⭐ If you like this project, give it a star on GitHub!
+  </p>
 
-🧠 Business Logic Highlights
+</div>
 
-✅ Transaction-safe money transfers
-
-✅ Prevents negative balances
-
-✅ Supports multiple accounts per customer
-
-✅ Automatically selects valid sender account
-
-✅ Uses DB-level atomic operations
-
-✅ Clean separation of concerns
-
-🖥️ Frontend Features
-
-Customer search
-
-Account listing
-
-Deposit / Withdraw
-
-Customer-to-customer transfer
-
-Live balance update
-
-Error & success feedback
-
-🧪 Example Use Case
-
-Create customers
-
-Create accounts
-
-Deposit money
-
-Transfer between customers
-
-View transaction history
-
-📌 Future Improvements (Planned)
-
-🔐 JWT Authentication
-
-📊 Transaction history UI
-
-🧾 PDF transaction export
-
-💱 Multi-currency support
-
-🧠 Fraud detection logic
-
-🐳 Docker support
-
-👨‍💻 Author
-
-Beyza Karaalp
-Backend Developer | Go Enthusiast
-
-📌 GitHub: https://github.com/YOUR_USERNAME
-
-⭐️ If you like this project
-
-Give it a ⭐ on GitHub — it really helps!
+</body>
+</html>
